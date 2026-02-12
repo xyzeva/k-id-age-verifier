@@ -32,30 +32,48 @@
 		up
 		<span class="text-white/70">(typing "allow pasting" before if necessary)</span>:
 	</p>
-	<pre class="my-4 bg-white/10 p-5 text-wrap">// add a chunk to get all of the webpack chunks
-_mods = webpackChunkdiscord_app.push([[Symbol()],&#123;&#125;,r=>r.c]);
-webpackChunkdiscord_app.pop(); // cleanup the chunk we added
+	<pre class="my-4 bg-white/10 p-5 text-wrap">
+// add a chunk to extract webpack's moduleCache
+let webpackRequire = webpackChunkdiscord_app.push([[Symbol()],&lcub;&rcub;,(r) => r]);
+// cleanup the chunk we added
+webpackChunkdiscord_app.pop();
 
-// utility to find a webpack chunk by property
-findByProps = (...props) => &#123;
-    for (let m of Object.values(_mods)) &#123;
-        try &#123;
-            if (!m.exports || m.exports === window) continue;
-            if (props.every((x) => m.exports?.[x])) return m.exports;
+let modules = webpackRequire.m;
+let cache = webpackRequire.c;
 
-            for (let ex in m.exports) &#123;
-                if (props.every((x) => m.exports?.[ex]?.[x]) && m.exports[ex][Symbol.toStringTag] !== 'IntlMessagesProxy') return m.exports[ex];
-            &#125;
-        &#125; catch &#123;&#125;
-    &#125;
-&#125;
+// https://github.com/moonlight-mod/moonlight/blob/main/packages/core-extensions/src/spacepack/webpackModules/spacepack.ts
+// helper to find a webpack module via code snippet
+function findByCode(src) &lcub;
+  for (const [id, mod] of Object.entries(modules)) &lcub;
+    if (mod.toString().includes(src)) &lcub;
+      return cache[id].exports;
+    &rcub;
+  &rcub;
+&rcub;
 
+// helper to find an object by its key
+function findObjectFromKey(exports, key) &lcub;
+  if (!exports) return;
+  for (const exportKey in exports) &lcub;
+    const obj = exports[exportKey];
+    if (obj && obj[key]) return obj;
+  &rcub;
+&rcub;
 
+// https://github.com/moonlight-mod/moonlight/blob/main/packages/mappings/src/mappings/discord/utils/HTTPUtils.ts
 // find the discord api client
-api = findByProps('Bo','oh').Bo
+const api = findObjectFromKey(
+  findByCode('.set("X-Audit-Log-Reason",'),
+  "patch",
+);
 
 // send a api request to discord /age-verification/verify and then redirect the page to our website
-window.location.href = `https://age-verifier.kibty.town/webview?url=$&#123;encodeURIComponent((await api.post(&#123; url: '/age-verification/verify', body: &#123; method: 3 &#125;&#125;)).body.verification_webview_url)&#125;`</pre>
+const request = await api.post(&lcub;
+  url: "/age-verification/verify",
+  body: &lcub; method: 3 &rcub;,
+&rcub;);
+const verificationUrl = request.body.verification_webview_url;
+window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encodeURIComponent(verificationUrl)&rcub;`;</pre>
 	<p class="text-center text-white/50">
 		(feel free to read the code, we made it readable and we have nothing to hide)
 	</p>
