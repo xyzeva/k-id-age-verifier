@@ -3,7 +3,7 @@
 	let qrCodeError = $state<string | null>(null);
 	let qrCodeSuccess = $state(false);
 
-	const IS_PATCHED = false;
+	const IS_PATCHED = true;
 </script>
 
 <div class="mx-auto w-screen max-w-6xl items-center p-5 pb-16">
