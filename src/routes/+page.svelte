@@ -1,9 +1,44 @@
 <script lang="ts">
+	import jsQR from 'jsqr';
+
 	let qrCodeUrl = $state<string | null>(null);
 	let qrCodeError = $state<string | null>(null);
 	let qrCodeSuccess = $state(false);
 
 	const IS_PATCHED = false;
+
+	let fileInput: HTMLInputElement;
+	let dragOver = $state(false);
+
+	async function decodeImage(file: File) {
+		qrCodeError = null;
+		try {
+			const bitmap = await createImageBitmap(file);
+			const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+			const ctx = canvas.getContext('2d')!;
+			ctx.drawImage(bitmap, 0, 0);
+			const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+			const result = jsQR(imageData.data, imageData.width, imageData.height);
+			if (result) {
+				qrCodeUrl = result.data;
+			} else {
+				qrCodeError = 'no qr code found in image';
+			}
+		} catch {
+			qrCodeError = 'could not read image';
+		}
+	}
+
+	function onDrop(e: DragEvent) {
+		e.preventDefault();
+		dragOver = false;
+		const file = e.dataTransfer?.files[0];
+		if (file && file.type.startsWith('image/')) {
+			decodeImage(file);
+		} else {
+			qrCodeError = 'please drop an image file';
+		}
+	}
 </script>
 
 <div class="mx-auto w-screen max-w-6xl items-center p-5 pb-16">
@@ -93,16 +128,41 @@ window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encod
 			how to verify on other platforms (twitch, kick, snapchat, ...others)
 		</h2>
 		<p>
-			navigate to the age verification page and choose selfie, from there, get the url of the qr
-			code and put it in this input box, and press verify
+			navigate to the age verification page and choose selfie, from there, get the url of the qr code
+			and put it in this input box, and press verify. or, scan/drop the qr code image below
 		</p>
 
-		<div class="mt-4 flex gap-4">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="mt-4 flex gap-2"
+			ondrop={onDrop}
+			ondragover={(e) => {
+				e.preventDefault();
+				dragOver = true;
+			}}
+			ondragleave={() => {
+				dragOver = false;
+			}}
+		>
 			<input
-				class="w-full border-2 border-white/50 p-2"
+				class="min-w-0 flex-1 border-2 border-white/50 p-2 {dragOver ? 'border-dashed' : ''}"
 				bind:value={qrCodeUrl}
-				placeholder="https://..."
+				placeholder="https://... (or drop a qr code image)"
 			/>
+			<input
+				type="file"
+				accept="image/*"
+				class="hidden"
+				bind:this={fileInput}
+				onchange={() => {
+					if (fileInput.files?.[0]) decodeImage(fileInput.files[0]);
+					fileInput.value = '';
+				}}
+			/>
+			<button
+				class="w-16 border-2 border-white/50 p-2 hover:cursor-pointer"
+				onclick={() => fileInput.click()}>scan</button
+			>
 			<button
 				class="w-24 border-2 border-white/50 p-2 hover:cursor-pointer"
 				onclick={(e) => {
@@ -140,6 +200,7 @@ window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encod
 				}}>verify</button
 			>
 		</div>
+
 		{#if qrCodeSuccess}
 			<p class="mt-4 text-green-500">
 				your account has successfully been verified. go back to the site tab to continue
