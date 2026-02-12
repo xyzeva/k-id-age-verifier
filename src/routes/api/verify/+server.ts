@@ -2,11 +2,66 @@ import type { RequestEvent } from './$types';
 import { Buffer } from 'node:buffer';
 
 const BASE_URL = 'https://eu-west-1.faceassure.com';
-const K_ID_DEPLOYMENT_ID = '20260212011106-337ae99-production';
-const K_ID_PRIVATELY_ACTION_ID = '40cf843cd405e2145e6dfb8d0f5247050a311ae378';
+const K_ID_DEPLOYMENT_ID_FALLBACK = '20260212011106-337ae99-production';
+const K_ID_PRIVATELY_ACTION_ID_FALLBACK = '40cf843cd405e2145e6dfb8d0f5247050a311ae378';
 const K_ID_NEXT_ROUTER_TREE =
 	'%5B%22%22%2C%7B%22children%22%3A%5B%22verify%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D';
 const PRIVATELY_URL_REGEX = /(https:\/\/[a-z0-9]+\.cloudfront\.net\/.*)(?=:\{)/;
+
+async function resolveKIdRuntimeConfig(userAgent: string, acceptLanguage: string) {
+	const verifyUrl = 'https://family.k-id.com/verify';
+
+	try {
+		const verifyRes = await fetch(verifyUrl, {
+			headers: {
+				'User-Agent': userAgent,
+				accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+				'accept-language': acceptLanguage
+			}
+		});
+
+		if (!verifyRes.ok) throw new Error(`verify page fetch failed (${verifyRes.status})`);
+
+		const verifyHtml = await verifyRes.text();
+		const deploymentMatch = verifyHtml.match(/\?dpl=([0-9]{14}-[a-f0-9]+-production)/);
+		const deploymentId = deploymentMatch?.[1] ?? K_ID_DEPLOYMENT_ID_FALLBACK;
+
+		const scriptSrcs = [...verifyHtml.matchAll(/<script[^>]+src="([^"]+)"/g)]
+			.map((m) => m[1])
+			.filter(Boolean);
+
+		let privatelyActionId = K_ID_PRIVATELY_ACTION_ID_FALLBACK;
+
+		for (const src of scriptSrcs) {
+			const scriptUrl = new URL(src, verifyUrl).toString();
+			const scriptRes = await fetch(scriptUrl, {
+				headers: {
+					'User-Agent': userAgent,
+					accept: '*/*',
+					'accept-language': acceptLanguage
+				}
+			});
+
+			if (!scriptRes.ok) continue;
+			const scriptText = await scriptRes.text();
+			const actionMatch = scriptText.match(
+				/createServerReference\("([0-9a-f]{40,48})"[\s\S]*?"generatePrivatelyLinkAction"/i
+			);
+			if (actionMatch?.[1]) {
+				privatelyActionId = actionMatch[1];
+				break;
+			}
+		}
+
+		return { deploymentId, privatelyActionId };
+	} catch (error) {
+		console.warn('failed to resolve dynamic k-id runtime config, falling back to defaults', error);
+		return {
+			deploymentId: K_ID_DEPLOYMENT_ID_FALLBACK,
+			privatelyActionId: K_ID_PRIVATELY_ACTION_ID_FALLBACK
+		};
+	}
+}
 
 const jsonResponse = (body: unknown, status: number = 200, extraHeaders: object = {}) =>
 	new Response(JSON.stringify(body), {
@@ -786,6 +841,11 @@ export const POST = async (event: RequestEvent) => {
 			}
 		});
 
+		const { deploymentId, privatelyActionId } = await resolveKIdRuntimeConfig(
+			userAgent,
+			location.lang
+		);
+
 		const privatelyActionRes = await fetch(webviewUrl, {
 			method: 'POST',
 			headers: {
@@ -796,9 +856,9 @@ export const POST = async (event: RequestEvent) => {
 				'sec-fetch-dest': 'empty',
 				'sec-fetch-mode': 'cors',
 				'sec-fetch-site': 'cross-site',
-				'Next-Action': K_ID_PRIVATELY_ACTION_ID,
+				'Next-Action': privatelyActionId,
 				'Next-Router-State-Tree': K_ID_NEXT_ROUTER_TREE,
-				'X-Deployment-Id': K_ID_DEPLOYMENT_ID,
+				'X-Deployment-Id': deploymentId,
 				'Content-Type': 'application/json',
 				Origin: 'https://family.k-id.com',
 				Referer: identifier
