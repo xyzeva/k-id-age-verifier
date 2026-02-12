@@ -2,6 +2,8 @@
 	let qrCodeUrl = $state<string | null>(null);
 	let qrCodeError = $state<string | null>(null);
 	let qrCodeSuccess = $state(false);
+
+	const IS_PATCHED = true;
 </script>
 
 <div class="mx-auto w-screen max-w-6xl items-center p-5 pb-16">
@@ -17,22 +19,25 @@
 		<a class="underline" href="https://amplitudes.me/" target="_blank">amplitudes</a> (for previous work)
 	</p>
 
-	<h2 class="mt-8 text-2xl font-bold">how to verify on discord</h2>
-	<p class="mt-4 text-left">
-		it <span class="font-bold">doesn't matter</span> if you are in the UK or similar region that
-		currently has access to this, this will verify your account for the future global rollout in
-		march aswell as current. to use, simply paste this script into your discord console by going to
-		<a
-			class="font-bold underline"
-			href="https://discord.com/app"
-			target="_blank"
-			rel="noreferer noopener">discord.com/app</a
-		>, pressing <span class="font-bold">F12</span>, going to <span class="font-bold">Console</span>
-		and copying and pasting and hitting enter on the following script and solving the captcha that pops
-		up
-		<span class="text-white/70">(typing "allow pasting" before if necessary)</span>:
-	</p>
-	<pre class="my-4 bg-white/10 p-5 text-wrap">
+	{#if !IS_PATCHED}
+		<h2 class="mt-8 text-2xl font-bold">how to verify on discord</h2>
+		<p class="mt-4 text-left">
+			it <span class="font-bold">doesn't matter</span> if you are in the UK or similar region that
+			currently has access to this, this will verify your account for the future global rollout in
+			march aswell as current. to use, simply paste this script into your discord console by going
+			to
+			<a
+				class="font-bold underline"
+				href="https://discord.com/app"
+				target="_blank"
+				rel="noreferer noopener">discord.com/app</a
+			>, pressing <span class="font-bold">F12</span>, going to
+			<span class="font-bold">Console</span>
+			and copying and pasting and hitting enter on the following script and solving the captcha that pops
+			up
+			<span class="text-white/70">(typing "allow pasting" before if necessary)</span>:
+		</p>
+		<pre class="my-4 bg-white/10 p-5 text-wrap">
 // add a chunk to extract webpack's moduleCache
 let webpackRequire = webpackChunkdiscord_app.push([[Symbol()],&lcub;&rcub;,(r) => r]);
 // cleanup the chunk we added
@@ -74,74 +79,80 @@ const request = await api.post(&lcub;
 &rcub;);
 const verificationUrl = request.body.verification_webview_url;
 window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encodeURIComponent(verificationUrl)&rcub;`;</pre>
-	<p class="text-center text-white/50">
-		(feel free to read the code, we made it readable and we have nothing to hide)
-	</p>
-	<p class="mt-4 text-left">
-		it should navigate to a link <span class="text-white/70"
-			>(or give you a link to navigate to)</span
-		>, from there, you can just wait until the page says success
-	</p>
-	<p class="mt-2 text-left">congrats! your discord account is now age verified.</p>
-
-	<h2 class="mt-4 text-2xl font-bold">
-		how to verify on other platforms (twitch, kick, snapchat, ...others)
-	</h2>
-	<p>
-		navigate to the age verification page and choose selfie, from there, get the url of the qr code
-		and put it in this input box, and press verify
-	</p>
-
-	<div class="mt-4 flex gap-4">
-		<input
-			class="w-full border-2 border-white/50 p-2"
-			bind:value={qrCodeUrl}
-			placeholder="https://..."
-		/>
-		<button
-			class="w-24 border-2 border-white/50 p-2 hover:cursor-pointer"
-			onclick={(e) => {
-				e.preventDefault();
-				qrCodeError = null;
-				qrCodeSuccess = false;
-
-				if (!qrCodeUrl) {
-					qrCodeError = "you didn't enter a qr code url";
-					return;
-				}
-
-				fetch('/api/verify', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						type: 'qr_link',
-						identifier: qrCodeUrl
-					})
-				})
-					.then(async (r) => {
-						if (!r.ok) {
-							qrCodeError = await r.text().catch(() => 'unexpected error');
-							return;
-						}
-
-						qrCodeSuccess = true;
-					})
-					.catch((e) => {
-						console.error('error sending verify request', e);
-						qrCodeError = 'unexpected error, please check your browser console.';
-					});
-			}}>verify</button
-		>
-	</div>
-	{#if qrCodeSuccess}
-		<p class="mt-4 text-green-500">
-			your account has successfully been verified. go back to the site tab to continue
+		<p class="text-center text-white/50">
+			(feel free to read the code, we made it readable and we have nothing to hide)
 		</p>
-	{:else if qrCodeError}
-		<p class="mt-4 text-red-500">
-			{qrCodeError}
+		<p class="mt-4 text-left">
+			it should navigate to a link <span class="text-white/70"
+				>(or give you a link to navigate to)</span
+			>, from there, you can just wait until the page says success
+		</p>
+		<p class="mt-2 text-left">congrats! your discord account is now age verified.</p>
+
+		<h2 class="mt-4 text-2xl font-bold">
+			how to verify on other platforms (twitch, kick, snapchat, ...others)
+		</h2>
+		<p>
+			navigate to the age verification page and choose selfie, from there, get the url of the qr
+			code and put it in this input box, and press verify
+		</p>
+
+		<div class="mt-4 flex gap-4">
+			<input
+				class="w-full border-2 border-white/50 p-2"
+				bind:value={qrCodeUrl}
+				placeholder="https://..."
+			/>
+			<button
+				class="w-24 border-2 border-white/50 p-2 hover:cursor-pointer"
+				onclick={(e) => {
+					e.preventDefault();
+					qrCodeError = null;
+					qrCodeSuccess = false;
+
+					if (!qrCodeUrl) {
+						qrCodeError = "you didn't enter a qr code url";
+						return;
+					}
+
+					fetch('/api/verify', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							type: 'qr_link',
+							identifier: qrCodeUrl
+						})
+					})
+						.then(async (r) => {
+							if (!r.ok) {
+								qrCodeError = await r.text().catch(() => 'unexpected error');
+								return;
+							}
+
+							qrCodeSuccess = true;
+						})
+						.catch((e) => {
+							console.error('error sending verify request', e);
+							qrCodeError = 'unexpected error, please check your browser console.';
+						});
+				}}>verify</button
+			>
+		</div>
+		{#if qrCodeSuccess}
+			<p class="mt-4 text-green-500">
+				your account has successfully been verified. go back to the site tab to continue
+			</p>
+		{:else if qrCodeError}
+			<p class="mt-4 text-red-500">
+				{qrCodeError}
+			</p>
+		{/if}
+	{:else}
+		<p class="mt-8 text-red-500">
+			the age verifier is currently patched, we are working on a fix and will update this page when
+			we do.
 		</p>
 	{/if}
 
