@@ -2,7 +2,7 @@ import type { RequestEvent } from './$types';
 import { Buffer } from 'node:buffer';
 
 const BASE_URL = 'https://eu-west-1.faceassure.com';
-const K_ID_DEPLOYMENT_ID = '20260210222654-016f063-production';
+const DEPLOYMENT_ID_REGEX = /dpl=(20\d{12}-[a-f0-9]+-production)/i;
 const K_ID_PRIVATELY_ACTION_ID = '408838ce2bed4d4db2ae2194cc41cc46d6008d1872';
 const K_ID_NEXT_ROUTER_TREE =
 	'%5B%22%22%2C%7B%22children%22%3A%5B%22verify%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D';
@@ -772,7 +772,7 @@ export const POST = async (event: RequestEvent) => {
 		const payload = JSON.parse(atob(parts[1]));
 
 		// fetch the webview first
-		await fetch(webviewUrl, {
+		const webViewRes = await fetch(webviewUrl, {
 			headers: {
 				'User-Agent': userAgent,
 				accept: '*/*',
@@ -786,6 +786,17 @@ export const POST = async (event: RequestEvent) => {
 			}
 		});
 
+		if (!webViewRes.ok) {
+			return jsonResponse({ error: 'failed to fetch webview' }, 500);
+		}
+
+		const webViewBody = await webViewRes.text();
+		const deploymentIdFromBody = webViewBody.match(DEPLOYMENT_ID_REGEX)?.[1];
+		console.log('Extracted deployment id', {deploymentIdFromBody});
+		if (!deploymentIdFromBody) {
+			return jsonResponse({ error: 'no deployment id found in webview body' }, 500);
+		}
+
 		const privatelyActionRes = await fetch(webviewUrl, {
 			method: 'POST',
 			headers: {
@@ -798,7 +809,7 @@ export const POST = async (event: RequestEvent) => {
 				'sec-fetch-site': 'cross-site',
 				'Next-Action': K_ID_PRIVATELY_ACTION_ID,
 				'Next-Router-State-Tree': K_ID_NEXT_ROUTER_TREE,
-				'X-Deployment-Id': K_ID_DEPLOYMENT_ID,
+				'X-Deployment-Id': deploymentIdFromBody,
 				'Content-Type': 'application/json',
 				Origin: 'https://family.k-id.com',
 				Referer: identifier
