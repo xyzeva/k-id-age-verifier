@@ -2,8 +2,8 @@ import type { RequestEvent } from './$types';
 import { Buffer } from 'node:buffer';
 
 const BASE_URL = 'https://eu-west-1.faceassure.com';
-const K_ID_DEPLOYMENT_ID = '20260210222654-016f063-production';
-const K_ID_PRIVATELY_ACTION_ID = '408838ce2bed4d4db2ae2194cc41cc46d6008d1872';
+const K_ID_DEPLOYMENT_ID = await getDeploymentId();
+const K_ID_PRIVATELY_ACTION_ID = await getPrivatelyLinkActionId();
 const K_ID_NEXT_ROUTER_TREE =
 	'%5B%22%22%2C%7B%22children%22%3A%5B%22verify%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D';
 const PRIVATELY_URL_REGEX = /(https:\/\/[a-z0-9]+\.cloudfront\.net\/.*)(?=:\{)/;
@@ -21,6 +21,28 @@ const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max 
 const randomFloat = (min: number, max: number, decimals = 15) =>
 	parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
 const randomChoice = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+async function getDeploymentId() {
+    const body = await fetch('https://assets.k-id.com/family-portal/_next/static/chunks/f5d8702bf5f6d23d.js').then(function(response) { return response.text(); });
+    const i = body.indexOf("-production") + "-production".length;
+    var j = i;
+    var char = body.charAt(--j);
+    while (char != '"') { char = body.charAt(--j); }
+    return body.substring(j+1,i);
+}
+
+async function getPrivatelyLinkActionId() {
+    const body = await fetch('https://assets.k-id.com/family-portal/_next/static/chunks/6dd447198eabd9dc.js').then(function(response) { return response.text(); });
+    var i = body.indexOf('"generatePrivatelyLinkAction"');
+    var char = body.charAt(--i);
+    while (char != '"') { char = body.charAt(--i); }
+    
+    var j = i;
+    var char = body.charAt(--j);
+    while (char != '"') { char = body.charAt(--j); }
+    
+    return body.substring(j+1,i-1);
+}
 
 function generateUserAgent() {
 	const agents = [
