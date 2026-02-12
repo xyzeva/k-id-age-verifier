@@ -41,7 +41,7 @@ async function getPrivatelyLinkActionId() {
     var char = body.charAt(--j);
     while (char != '"') { char = body.charAt(--j); }
     
-    return body.substring(j+1,i-1);
+    return body.substring(j+1,i);
 }
 
 function generateUserAgent() {
