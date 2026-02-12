@@ -7,7 +7,6 @@
 
 	const IS_PATCHED = false;
 
-	let fileInput = $state<HTMLInputElement>();
 	let dragOver = $state(false);
 
 	async function decodeImage(file: File) {
@@ -26,17 +25,6 @@
 			}
 		} catch {
 			qrCodeError = 'could not read image';
-		}
-	}
-
-	function onDrop(e: DragEvent) {
-		e.preventDefault();
-		dragOver = false;
-		const file = e.dataTransfer?.files[0];
-		if (file && file.type.startsWith('image/')) {
-			decodeImage(file);
-		} else {
-			qrCodeError = 'please drop an image file';
 		}
 	}
 </script>
@@ -133,36 +121,38 @@ window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encod
 		</p>
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="mt-4 flex gap-2"
-			ondrop={onDrop}
-			ondragover={(e) => {
-				e.preventDefault();
-				dragOver = true;
-			}}
-			ondragleave={() => {
-				dragOver = false;
-			}}
-		>
+		<div class="mt-4 flex gap-2">
 			<input
 				class="min-w-0 flex-1 border-2 border-white/50 p-2 {dragOver ? 'border-dashed' : ''}"
 				bind:value={qrCodeUrl}
 				placeholder="https://... (or drop a qr code image)"
-			/>
-			<input
-				type="file"
-				accept="image/*"
-				class="hidden"
-				bind:this={fileInput}
-				onchange={() => {
-					if (fileInput?.files?.[0]) decodeImage(fileInput.files[0]);
-					if (fileInput) fileInput.value = '';
+				ondrop={(e) => {
+					e.preventDefault();
+					dragOver = false;
+					const file = e.dataTransfer?.files[0];
+					if (file) decodeImage(file);
+				}}
+				ondragover={(e) => {
+					e.preventDefault();
+					dragOver = true;
+				}}
+				ondragleave={() => {
+					dragOver = false;
 				}}
 			/>
-			<button
-				class="w-16 border-2 border-white/50 p-2 hover:cursor-pointer"
-				onclick={() => fileInput?.click()}>scan</button
-			>
+			<label class="w-16 border-2 border-white/50 p-2 text-center hover:cursor-pointer">
+				scan
+				<input
+					type="file"
+					accept="image/*"
+					class="hidden"
+					onchange={(e) => {
+						const file = e.currentTarget.files?.[0];
+						if (file) decodeImage(file);
+						e.currentTarget.value = '';
+					}}
+				/>
+			</label>
 			<button
 				class="w-24 border-2 border-white/50 p-2 hover:cursor-pointer"
 				onclick={(e) => {
