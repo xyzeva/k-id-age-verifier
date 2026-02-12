@@ -7,7 +7,7 @@
 
 	const IS_PATCHED = false;
 
-	let fileInput: HTMLInputElement;
+	let fileInput = $state<HTMLInputElement>();
 	let dragOver = $state(false);
 
 	async function decodeImage(file: File) {
@@ -128,8 +128,8 @@ window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encod
 			how to verify on other platforms (twitch, kick, snapchat, ...others)
 		</h2>
 		<p>
-			navigate to the age verification page and choose selfie, from there, get the url of the qr code
-			and put it in this input box, and press verify. or, scan/drop the qr code image below
+			navigate to the age verification page and choose selfie, from there, get the url of the qr
+			code and put it in this input box, and press verify. or, scan/drop the qr code image below
 		</p>
 
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -155,13 +155,13 @@ window.location.href = `https://age-verifier.kibty.town/webview?url=$&lcub;encod
 				class="hidden"
 				bind:this={fileInput}
 				onchange={() => {
-					if (fileInput.files?.[0]) decodeImage(fileInput.files[0]);
-					fileInput.value = '';
+					if (fileInput?.files?.[0]) decodeImage(fileInput.files[0]);
+					if (fileInput) fileInput.value = '';
 				}}
 			/>
 			<button
 				class="w-16 border-2 border-white/50 p-2 hover:cursor-pointer"
-				onclick={() => fileInput.click()}>scan</button
+				onclick={() => fileInput?.click()}>scan</button
 			>
 			<button
 				class="w-24 border-2 border-white/50 p-2 hover:cursor-pointer"
