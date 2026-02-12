@@ -7,8 +7,29 @@ const K_ID_PRIVATELY_ACTION_ID_FALLBACK = '40cf843cd405e2145e6dfb8d0f5247050a311
 const K_ID_NEXT_ROUTER_TREE =
 	'%5B%22%22%2C%7B%22children%22%3A%5B%22verify%22%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D';
 const PRIVATELY_URL_REGEX = /(https:\/\/[a-z0-9]+\.cloudfront\.net\/.*)(?=:\{)/;
+const RUNTIME_CONFIG_TTL_MS = 10 * 60 * 1000;
 
-async function resolveKIdRuntimeConfig(userAgent: string, acceptLanguage: string) {
+let runtimeConfigCache:
+	| {
+			deploymentId: string;
+			privatelyActionId: string;
+			expiresAt: number;
+	  }
+	| undefined;
+
+async function resolveKIdRuntimeConfig(
+	userAgent: string,
+	acceptLanguage: string,
+	forceRefresh = false
+) {
+	const now = Date.now();
+	if (!forceRefresh && runtimeConfigCache && runtimeConfigCache.expiresAt > now) {
+		return {
+			deploymentId: runtimeConfigCache.deploymentId,
+			privatelyActionId: runtimeConfigCache.privatelyActionId
+		};
+	}
+
 	const verifyUrl = 'https://family.k-id.com/verify';
 
 	try {
@@ -28,30 +49,41 @@ async function resolveKIdRuntimeConfig(userAgent: string, acceptLanguage: string
 
 		const scriptSrcs = [...verifyHtml.matchAll(/<script[^>]+src="([^"]+)"/g)]
 			.map((m) => m[1])
-			.filter(Boolean);
+			.filter((src) => Boolean(src) && src.includes('/_next/static/chunks/'));
 
 		let privatelyActionId = K_ID_PRIVATELY_ACTION_ID_FALLBACK;
 
-		for (const src of scriptSrcs) {
-			const scriptUrl = new URL(src, verifyUrl).toString();
-			const scriptRes = await fetch(scriptUrl, {
-				headers: {
-					'User-Agent': userAgent,
-					accept: '*/*',
-					'accept-language': acceptLanguage
-				}
-			});
+		const scriptFetches = await Promise.allSettled(
+			scriptSrcs.map(async (src) => {
+				const scriptUrl = new URL(src, verifyUrl).toString();
+				const scriptRes = await fetch(scriptUrl, {
+					headers: {
+						'User-Agent': userAgent,
+						accept: '*/*',
+						'accept-language': acceptLanguage
+					}
+				});
+				if (!scriptRes.ok) return undefined;
+				const scriptText = await scriptRes.text();
+				const actionMatch = scriptText.match(
+					/createServerReference\("([0-9a-f]{40,48})"[\s\S]*?"generatePrivatelyLinkAction"/i
+				);
+				return actionMatch?.[1];
+			})
+		);
 
-			if (!scriptRes.ok) continue;
-			const scriptText = await scriptRes.text();
-			const actionMatch = scriptText.match(
-				/createServerReference\("([0-9a-f]{40,48})"[\s\S]*?"generatePrivatelyLinkAction"/i
-			);
-			if (actionMatch?.[1]) {
-				privatelyActionId = actionMatch[1];
+		for (const result of scriptFetches) {
+			if (result.status === 'fulfilled' && result.value) {
+				privatelyActionId = result.value;
 				break;
 			}
 		}
+
+		runtimeConfigCache = {
+			deploymentId,
+			privatelyActionId,
+			expiresAt: now + RUNTIME_CONFIG_TTL_MS
+		};
 
 		return { deploymentId, privatelyActionId };
 	} catch (error) {
@@ -841,32 +873,38 @@ export const POST = async (event: RequestEvent) => {
 			}
 		});
 
-		const { deploymentId, privatelyActionId } = await resolveKIdRuntimeConfig(
-			userAgent,
-			location.lang
-		);
+		const callPrivatelyAction = async (deploymentId: string, privatelyActionId: string) =>
+			fetch(webviewUrl, {
+				method: 'POST',
+				headers: {
+					'User-Agent': userAgent,
+					accept: '*/*',
+					'accept-language': location.lang,
+					priority: 'u=1, i',
+					'sec-fetch-dest': 'empty',
+					'sec-fetch-mode': 'cors',
+					'sec-fetch-site': 'cross-site',
+					'Next-Action': privatelyActionId,
+					'Next-Router-State-Tree': K_ID_NEXT_ROUTER_TREE,
+					'X-Deployment-Id': deploymentId,
+					'Content-Type': 'application/json',
+					Origin: 'https://family.k-id.com',
+					Referer: identifier
+				},
+				body: JSON.stringify([
+					{ verificationId: payload.jti, useBranding: true, attemptId: crypto.randomUUID() }
+				])
+			});
 
-		const privatelyActionRes = await fetch(webviewUrl, {
-			method: 'POST',
-			headers: {
-				'User-Agent': userAgent,
-				accept: '*/*',
-				'accept-language': location.lang,
-				priority: 'u=1, i',
-				'sec-fetch-dest': 'empty',
-				'sec-fetch-mode': 'cors',
-				'sec-fetch-site': 'cross-site',
-				'Next-Action': privatelyActionId,
-				'Next-Router-State-Tree': K_ID_NEXT_ROUTER_TREE,
-				'X-Deployment-Id': deploymentId,
-				'Content-Type': 'application/json',
-				Origin: 'https://family.k-id.com',
-				Referer: identifier
-			},
-			body: JSON.stringify([
-				{ verificationId: payload.jti, useBranding: true, attemptId: crypto.randomUUID() }
-			])
-		});
+		let { deploymentId, privatelyActionId } = await resolveKIdRuntimeConfig(userAgent, location.lang);
+		let privatelyActionRes = await callPrivatelyAction(deploymentId, privatelyActionId);
+
+		if (!privatelyActionRes.ok && privatelyActionRes.status === 404) {
+			const refreshedConfig = await resolveKIdRuntimeConfig(userAgent, location.lang, true);
+			deploymentId = refreshedConfig.deploymentId;
+			privatelyActionId = refreshedConfig.privatelyActionId;
+			privatelyActionRes = await callPrivatelyAction(deploymentId, privatelyActionId);
+		}
 
 		if (!privatelyActionRes.ok) {
 			return jsonResponse(
