@@ -23,6 +23,9 @@
 				}
 
 				success = true;
+				setTimeout(() => {
+					window.location.href = 'https://discord.com/app';
+				}, 3000);
 			})
 			.catch((e) => {
 				console.error('error sending verify request', e);
@@ -35,6 +38,7 @@
 	{#if webviewUrl}
 		{#if success}
 			<p class="text-green-500">your account is now age verified. enjoy</p>
+			<p class="mt-2 text-white/50">redirecting back to discord in a few seconds...</p>
 		{:else if error}
 			<p class="text-red-500">{error}</p>
 		{:else}
