@@ -379,13 +379,13 @@ async function verify(qrCodeUrlStr: string) {
 
 	const generateTimeline = (maxTime: number) => {
 		const entries = [];
-		let lastTime = randomInt(100, 500);
+		let lastTime = randomInt(1, 5);
 
 		for (let i = 0; i < randomInt(1, 3); i++) {
-			const end = lastTime + randomInt(500, 2000);
+			const end = lastTime + randomInt(5, 20);
 			if (end < maxTime) {
 				entries.push([lastTime, end]);
-				lastTime = end + randomInt(200, 1000);
+				lastTime = end + randomInt(20, 100);
 			}
 		}
 		return entries;
@@ -598,7 +598,7 @@ async function verify(qrCodeUrlStr: string) {
 				model_version: 'v.2025.0',
 				cropper_version: 'v.0.0.3',
 				start_time_stamp: currentTime + Number(Math.random().toFixed(3)),
-				end_time_stamp: currentTime + completionTime / 1000,
+				end_time_stamp: currentTime + completionTime  + Number(Math.random().toFixed(3)),
 				device_timezone: location.timezone,
 				referring_page: `https://d3ogqhtsivkon3.cloudfront.net/index-v1.10.22.html#/?token=${token}&shi=false&from_qr_scan=true`,
 				parent_page: `https://d3ogqhtsivkon3.cloudfront.net/dynamic_index.html?sl=${jwtPayload.jti}&region=eu-central-1`,
