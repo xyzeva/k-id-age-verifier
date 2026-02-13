@@ -10,20 +10,12 @@ No uploading IDs to every site
 
 No selfies or document scans here
 
-One-time K-ID adult verification
+Easy activiations
 
-Reusable across K-ID–enabled websites
+2 Supported methods
+
+Quick patches
 
 Get verified
-
-[website here.](https://age-verifier.kibty.town/)
-
-
-
-
-
-
-
-
 
 [on the website](https://age-verifier.kibty.town)
