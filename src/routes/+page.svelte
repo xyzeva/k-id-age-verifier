@@ -1,7 +1,7 @@
 <script lang="ts">
 	import QRCodeScanner from '$lib/components/QRCodeScanner.svelte';
 
-	const IS_PATCHED = true;
+	const IS_PATCHED = false;
 </script>
 
 <div class="mx-auto w-screen max-w-6xl items-center p-5 pb-16">

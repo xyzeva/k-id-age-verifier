@@ -378,11 +378,17 @@ async function verify(qrCodeUrlStr: string) {
 	};
 
 	const generateTimeline = (maxTime: number) => {
-		const entries = [];
-		for (let i = 0; i < randomInt(2, 5); i++) {
-			const start = randomInt(1, maxTime - 100);
-			const end = start + randomInt(50, 500);
-			if (end < maxTime) entries.push([start, end]);
+		const entries: [number, number][] = [];
+		let currentPos = randomInt(100, 500);
+
+		const numSegments = randomInt(1, 3);
+		for (let i = 0; i < numSegments; i++) {
+			const duration = randomInt(500, 2000);
+			const end = currentPos + duration;
+			if (end < maxTime) {
+				entries.push([currentPos, end]);
+				currentPos = end + randomInt(100, 1000);
+			}
 		}
 		return entries;
 	};
@@ -426,31 +432,46 @@ async function verify(qrCodeUrlStr: string) {
 	const currentTime = Date.now() / 1000;
 	const completionTime = randomInt(8000, 15000);
 
-	const raws = Array.from({ length: 10 }, () => randomFloat(6.005, 7.007));
+	const rawBase = randomFloat(6.2, 6.8);
+	const raws = Array.from({ length: 10 }, () =>
+		parseFloat(Math.max(6.005, Math.min(7.007, rawBase + randomFloat(-0.15, 0.15))).toFixed(15))
+	);
 	const primaryOutputs = removeOutliersWithZscore(raws.map((r) => amap(r)));
 	const outputs = removeOutliersWithZscore(primaryOutputs);
 
 	const gestureMeasurementTime = Date.now();
-	const recordedMeasurements: number[] = Array.from({ length: 5 }, () => randomFloat(0.1, 0.8, 17));
-	const recordedTimestamps: number[] = [
-		randomInt(500, Math.min(completionTime, 1000)) - gestureMeasurementTime,
-		randomInt(700, Math.min(completionTime, 1000)) - gestureMeasurementTime,
-		randomInt(1000, Math.min(completionTime, 1400)) - gestureMeasurementTime,
-		randomInt(1400, Math.min(completionTime, 1600)) - gestureMeasurementTime,
-		randomInt(1600, Math.min(completionTime, 1800)) - gestureMeasurementTime
-	];
+
+	const recordedMeasurements: number[] = [];
+	let openness = randomFloat(0.15, 0.3, 17);
+	for (let i = 0; i < 5; i++) {
+		openness += randomFloat(0.05, 0.15, 17);
+		recordedMeasurements.push(parseFloat(openness.toFixed(17)));
+	}
+
+	const recordedTimestamps: number[] = [];
+	let rts = gestureMeasurementTime + randomInt(500, 800);
+	for (let i = 0; i < 5; i++) {
+		recordedTimestamps.push(rts);
+		rts += randomInt(100, 350);
+	}
 	const { speeds: recordedSpeeds, intervals: recordedIntervals } = calculateSpeedAndIntervals(
 		recordedMeasurements,
 		recordedTimestamps
 	);
 
-	const failedMeasurements: number[] = Array.from({ length: 5 }, () => randomFloat(0.1, 0.8, 17));
-	const failedTimestamps: number[] = [
-		randomInt(500, Math.min(completionTime, 1000)) - gestureMeasurementTime,
-		randomInt(700, Math.min(completionTime, 1000)) - gestureMeasurementTime,
-		randomInt(1000, Math.min(completionTime, 1400)) - gestureMeasurementTime,
-		randomInt(1400, Math.min(completionTime, 1600)) - gestureMeasurementTime
-	];
+	const failedMeasurements: number[] = [];
+	let failedOpenness = randomFloat(0.1, 0.25, 17);
+	for (let i = 0; i < 5; i++) {
+		failedOpenness += randomFloat(0.01, 0.06, 17);
+		failedMeasurements.push(parseFloat(failedOpenness.toFixed(17)));
+	}
+
+	const failedTimestamps: number[] = [];
+	let fts = gestureMeasurementTime - randomInt(3000, 6000);
+	for (let i = 0; i < 5; i++) {
+		failedTimestamps.push(fts);
+		fts += randomInt(100, 350);
+	}
 	const { speeds: failedOpennessSpeeds, intervals: failedOpennessIntervals } =
 		calculateSpeedAndIntervals(failedMeasurements, failedTimestamps);
 
@@ -458,12 +479,12 @@ async function verify(qrCodeUrlStr: string) {
 	const stateCompletionTimes: Record<string, number> = {};
 	for (const [key, timeline] of Object.entries(stateTimelines)) {
 		if (timeline.length < 1) continue;
-		let completionTime = 0;
-		for (const time of timeline) {
-			completionTime += time.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+		let spentInState = 0;
+		for (const range of timeline) {
+			spentInState += range[1] - range[0];
 		}
 
-		stateCompletionTimes[key] = completionTime;
+		stateCompletionTimes[key] = spentInState;
 	}
 	const mediaMetadata = generateMediaMetadata(jwtPayload.sub, sessionData.session_id);
 
@@ -593,8 +614,8 @@ async function verify(qrCodeUrlStr: string) {
 				sdk_path: './face-capture-v1.10.22.js',
 				model_version: 'v.2025.0',
 				cropper_version: 'v.0.0.3',
-				start_time_stamp: currentTime + Number(Math.random().toFixed(3)),
-				end_time_stamp: currentTime + completionTime + Number(Math.random().toFixed(3)),
+				start_time_stamp: currentTime,
+				end_time_stamp: currentTime + completionTime / 1000,
 				device_timezone: location.timezone,
 				referring_page: `https://d3ogqhtsivkon3.cloudfront.net/index-v1.10.22.html#/?token=${token}&shi=false&from_qr_scan=true`,
 				parent_page: `https://d3ogqhtsivkon3.cloudfront.net/dynamic_index.html?sl=${jwtPayload.jti}&region=eu-central-1`,
@@ -751,8 +772,8 @@ async function verify(qrCodeUrlStr: string) {
 						zy_estimates: Array.from({ length: 6 }, () => randomFloat(0.42, 0.44)),
 						driftfromcenterx_estimates: Array.from({ length: 6 }, () => randomFloat(0.005, 0.007)),
 						driftfromcentery_estimates: Array.from({ length: 6 }, () => randomFloat(-0.35, -0.37)),
-						xScaledShiftAmt: 11.5,
-						yScaledShiftAmt: -2
+						xScaledShiftAmt: randomChoice([11.5, -11.5]),
+						yScaledShiftAmt: randomChoice([-2, 2])
 					}
 				},
 				errorCharacteristics: {
