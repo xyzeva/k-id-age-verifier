@@ -379,13 +379,13 @@ async function verify(qrCodeUrlStr: string) {
 
 	const generateTimeline = (maxTime: number) => {
 		const entries = [];
-		let lastTime = randomInt(100, 500);
+		let lastTime = randomInt(1, 5);
 
 		for (let i = 0; i < randomInt(1, 3); i++) {
-			const end = lastTime + randomInt(500, 2000);
+			const end = lastTime + randomInt(5, 20);
 			if (end < maxTime) {
 				entries.push([lastTime, end]);
-				lastTime = end + randomInt(200, 1000);
+				lastTime = end + randomInt(20, 100);
 			}
 		}
 		return entries;
