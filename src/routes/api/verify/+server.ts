@@ -1,4 +1,4 @@
-import { ENABLE_WORKER_PROXY, WORKER_PROXY_TOKEN, WORKER_PROXY_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { RequestEvent } from './$types';
 import { Buffer } from 'node:buffer';
 
@@ -23,14 +23,14 @@ async function fetchWithWorkerProxy(
 	url: string,
 	init: RequestInit
 ): Promise<Response> {
-	if (ENABLE_WORKER_PROXY !== 'true') {
+	if (env.ENABLE_WORKER_PROXY !== 'true') {
 		return await fetch(url, init);
 	}
 
-	return await fetch(WORKER_PROXY_URL, {
+	return await fetch(env.WORKER_PROXY_URL!, {
 		method: 'POST',
 		headers: {
-			'x-proxy-token': WORKER_PROXY_TOKEN,
+			'x-proxy-token': env.WORKER_PROXY_TOKEN!,
 			'content-type': 'application/json'
 		},
 		body: JSON.stringify({
