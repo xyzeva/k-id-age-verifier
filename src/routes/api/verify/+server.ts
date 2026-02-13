@@ -384,7 +384,7 @@ async function verify(
 			api_key: null,
 			api_secret: null,
 			token,
-			longURL: null,
+			longURL: originalUrl,
 			userAgent: userAgent
 		})
 	});
