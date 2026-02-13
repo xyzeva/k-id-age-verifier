@@ -30,6 +30,12 @@
 				qr code scanner is below the code snippet)
 			</p>
 		</div>
+		<div class="mt-4 flex flex-col bg-red-500/50 p-5">
+			<h1 class="text-2xl font-extrabold">important: not seeing face scan</h1>
+			<p>
+				if you are not seeing a face scan option on k-id, try using a vpn and setting it in europe (uk is best but something like the netherlands works)
+			</p>
+		</div>
 		<p class="mt-4 text-left">
 			it <span class="font-bold">doesn't matter</span> if you are in the UK or similar region that
 			currently has access to this, this will verify your account for the future global rollout in
