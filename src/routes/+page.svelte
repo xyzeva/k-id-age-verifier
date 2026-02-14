@@ -1,5 +1,6 @@
 <script lang="ts">
 	import QRCodeScanner from '$lib/components/QRCodeScanner.svelte';
+	import code from '$lib/code.js?raw';
 
 	const IS_PATCHED = true;
 </script>
@@ -46,48 +47,7 @@
 			up
 			<span class="text-white/70">(typing "allow pasting" before if necessary)</span>:
 		</p>
-		<pre class="my-4 bg-white/10 p-5 text-wrap">
-// add a chunk to extract webpack's moduleCache
-let webpackRequire = webpackChunkdiscord_app.push([[Symbol()],&lcub;&rcub;,(r) => r]);
-// cleanup the chunk we added
-webpackChunkdiscord_app.pop();
-
-let modules = webpackRequire.m;
-let cache = webpackRequire.c;
-
-// https://github.com/moonlight-mod/moonlight/blob/main/packages/core-extensions/src/spacepack/webpackModules/spacepack.ts
-// helper to find a webpack module via code snippet
-function findByCode(src) &lcub;
-  for (const [id, mod] of Object.entries(modules)) &lcub;
-    if (mod.toString().includes(src)) &lcub;
-      return cache[id].exports;
-    &rcub;
-  &rcub;
-&rcub;
-
-// helper to find an object by its key
-function findObjectFromKey(exports, key) &lcub;
-  if (!exports) return;
-  for (const exportKey in exports) &lcub;
-    const obj = exports[exportKey];
-    if (obj && obj[key]) return obj;
-  &rcub;
-&rcub;
-
-// https://github.com/moonlight-mod/moonlight/blob/main/packages/mappings/src/mappings/discord/utils/HTTPUtils.ts
-// find the discord api client
-const api = findObjectFromKey(
-  findByCode('.set("X-Audit-Log-Reason",'),
-  "patch",
-);
-
-// send a api request to discord /age-verification/verify and then redirect the page to k-id's website
-const request = await api.post(&lcub;
-  url: "/age-verification/verify",
-  body: &lcub; method: 3 &rcub;,
-&rcub;);
-const verificationUrl = request.body.verification_webview_url;
-window.open(verificationUrl, "_blank");</pre>
+		<pre class="my-4 bg-white/10 p-5 text-wrap">{code}</pre>
 		<p class="text-center text-white/50">
 			(feel free to read the code, we made it readable and we have nothing to hide)
 		</p>
@@ -112,16 +72,16 @@ window.open(verificationUrl, "_blank");</pre>
 	{:else}
 		<p class="mt-8 text-red-500">
 			the age verifier is currently patched, we are working on a fix and will update this page when
-			we do.
+			one is found.
 		</p>
 	{/if}
 
 	<h2 class="mt-8 text-2xl font-bold">how does this work</h2>
 	<p>
-		k-id, the age verification provider discord uses doesn't store or send your face to the server.
+		k-id, the age verification provider discord uses, doesn't store or send your face to the server.
 		instead, it sends a bunch of metadata about your face and general process details. while this is
 		good for your privacy <span class="text-white/50"
-			>(well, considering some other providers send actual videos of your face to their servers)</span
+			>(considering some other providers send actual videos of your face to their servers)</span
 		>, its also bad for them, because we can just send legitimate looking metadata to their servers
 		and they have no way to tell its not legitimate.
 		<br />
