@@ -1,4 +1,4 @@
-import { ENABLE_WORKER_PROXY, WORKER_PROXY_TOKEN, WORKER_PROXY_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { RequestEvent } from './$types';
 import { Buffer } from 'node:buffer';
 
@@ -23,14 +23,14 @@ async function fetchWithWorkerProxy(
 	url: string,
 	init: RequestInit
 ): Promise<Response> {
-	if (ENABLE_WORKER_PROXY !== 'true') {
+	if (env.ENABLE_WORKER_PROXY !== 'true') {
 		return await fetch(url, init);
 	}
 
-	return await fetch(WORKER_PROXY_URL, {
+	return await fetch(env.WORKER_PROXY_URL!, {
 		method: 'POST',
 		headers: {
-			'x-proxy-token': WORKER_PROXY_TOKEN,
+			'x-proxy-token': env.WORKER_PROXY_TOKEN!,
 			'content-type': 'application/json'
 		},
 		body: JSON.stringify({
@@ -423,13 +423,13 @@ async function verify(
 
 	const generateTimeline = (maxTime: number) => {
 		const entries = [];
-		let lastTime = randomInt(1, 5);
+		let lastTime = randomInt(1000, 3000);
 
 		for (let i = 0; i < randomInt(1, 3); i++) {
-			const end = lastTime + randomInt(5, 20);
+			const end = lastTime + randomInt(300, 1500);
 			if (end < maxTime) {
 				entries.push([lastTime, end]);
-				lastTime = end + randomInt(20, 100);
+				lastTime = end + randomInt(1000, 3000);
 			}
 		}
 		return entries;
@@ -472,6 +472,7 @@ async function verify(
 	const maxAge = baseAge + randomFloat(0.1, 0.5);
 	const averageAge = (minAge + maxAge) / 2;
 	const currentTime = Date.now() / 1000;
+	const initialAdjustmentTime = randomInt(200, 800);
 	const completionTime = randomInt(8000, 15000);
 
 	const raws = Array.from({ length: 10 }, () => randomFloat(6.005, 7.007));
@@ -506,12 +507,12 @@ async function verify(
 	const stateCompletionTimes: Record<string, number> = {};
 	for (const [key, timeline] of Object.entries(stateTimelines)) {
 		if (timeline.length < 1) continue;
-		let completionTime = 0;
+		let totalDuration = 0;
 		for (const time of timeline) {
-			completionTime += time.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+			totalDuration += time[1] - time[0];
 		}
 
-		stateCompletionTimes[key] = completionTime;
+		stateCompletionTimes[key] = totalDuration;
 	}
 	const mediaMetadata = generateMediaMetadata(jwtPayload.sub, sessionData.session_id);
 
@@ -641,8 +642,8 @@ async function verify(
 				sdk_path: './face-capture-v1.10.22.js',
 				model_version: 'v.2025.0',
 				cropper_version: 'v.0.0.3',
-				start_time_stamp: currentTime + Number(Math.random().toFixed(3)),
-				end_time_stamp: currentTime + completionTime / 1000,
+				start_time_stamp: currentTime - (completionTime + initialAdjustmentTime + randomInt(2000, 5000)) / 1000,
+				end_time_stamp: currentTime + randomFloat(0.1, 0.5),
 				device_timezone: location.timezone,
 				referring_page: `https://d3ogqhtsivkon3.cloudfront.net/index-v1.10.22.html#/?token=${token}&shi=false&from_qr_scan=true`,
 				parent_page: `https://d3ogqhtsivkon3.cloudfront.net/dynamic_index.html?sl=${jwtPayload.jti}&region=eu-central-1`,
@@ -724,7 +725,7 @@ async function verify(
 							manufacturer: parsedUserAgent.device.vendor || 'Apple'
 						},
 						txMode: 'experiment',
-						timestamp: new Date().getTime()
+						timestamp: Date.now() - completionTime - initialAdjustmentTime - randomInt(2000, 5000)
 					},
 					experimentConfigResult: {
 						success: true,
@@ -734,9 +735,9 @@ async function verify(
 					isCameraPermissionGranted: true,
 					completionTime,
 					deferredComputationStartedAt:
-						currentTime + randomInt(20, 80) + Number(Math.random().toFixed(randomInt(1, 3))),
-					instructionCompletionTime: randomInt(10000, 14000),
-					initialAdjustmentTime: randomInt(100, 500),
+						currentTime - randomFloat(0.5, 2.0),
+					instructionCompletionTime: completionTime + initialAdjustmentTime + randomInt(50, 200),
+					initialAdjustmentTime,
 					completionState: 'COMPLETE',
 					unfinishedInstructions: Object.fromEntries(
 						[
