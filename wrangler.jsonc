@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "k-id-age-verifier-new",
+  "compatibility_date": "2026-09-23",
+  "compatibility_flags": [
+    "nodejs_als"
+  ],
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "workers_dev": true,
+  "preview_urls": true,
+
+  "kv_namespaces": [
+    {
+      "binding": "VERIFIER_KV",
+      "id": "99e17af0a2d34e8cac1661ef6b734d2b"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "VERIFIER_IMAGES",
+      "bucket_name": "age-verifier-images"
+    }
+  ]
+}

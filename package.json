@@ -1,0 +1,31 @@
+{
+  "name": "k-id-age-verifier",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "wrangler types --check && vite build",
+    "preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "wrangler types --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "gen": "wrangler types"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1138.0",
+    "@aws-sdk/credential-providers": "^3.1138.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^7.2.8",
+    "@sveltejs/kit": "^2.63.0",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@tailwindcss/vite": "^4.3.0",
+    "svelte": "^5.56.1",
+    "svelte-check": "^4.6.0",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "wrangler": "^4.97.0"
+  }
+}

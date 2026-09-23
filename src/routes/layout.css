@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+
+@font-face {
+    font-family: "unifont";
+    src: url(/fonts/unifont.woff) format("woff"), url(/fonts/unifont.ttf) format("truetype"), local("Unifont");
+}
+
+@theme {
+  --font-unifont: "unifont", monospace;
+}
