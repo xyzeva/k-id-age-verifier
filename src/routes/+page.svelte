@@ -1,15 +1,17 @@
 <script lang="ts">
+import samoyedBannerImage from "$lib/assets/img/samoyed-banner-compressed.jpg"
+
 import { page } from "$app/state";
 import { onMount } from "svelte";
 
 const webviewUrl = page.url.searchParams.get("webviewUrl");
 
 let enteredWebviewUrl = $state<string>("");
-let status = $state<"pending" | "complete" | "error">("pending");
+let status = $state<"pending" | "complete" | "error">("complete");
 let error = $state<string | null>(null);
 
 onMount(() => {
-  if (!webviewUrl) return;
+  if (!webviewUrl || status !== "pending") return;
 
   fetch("/api/verify", {
     method: "POST",
@@ -91,7 +93,8 @@ window.location.href = "${baseUrl.toString()}?webviewUrl=" + encodeURIComponent(
       verifying your age automatically, do not close this tab
     </p>
   {:else if status === "complete"}
-    <p class="font-bold text-[#55FF55]">your age has been verified!! c:</p>
+    <p class="font-bold text-[#55FF55] mb-4">your age has been verified!! c: enjoy a picture of a dog as a reward.</p>
+    <img src={samoyedBannerImage} alt="A samoyed dog, sitting." />
   {:else}
     <p class="text-[#FF5555]">
       {
