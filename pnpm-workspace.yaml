@@ -1,3 +1,4 @@
 onlyBuiltDependencies:
   - workerd
   - esbuild
+packages: ['.']
