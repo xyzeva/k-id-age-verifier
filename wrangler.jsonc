@@ -24,5 +24,12 @@
       "binding": "VERIFIER_IMAGES",
       "bucket_name": "age-verifier-images"
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true
+    }
+  }
 }
