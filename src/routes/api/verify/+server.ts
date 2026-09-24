@@ -5,22 +5,6 @@ import { generateTraceparent, generateUserAgent, getRandomLocation } from "$lib/
 import { doVeratadTry } from "$lib/veratad";
 import type { RequestEvent } from "./$types";
 
-const NEXT_ROUTER_STATE_TREE = [
-  "",
-  {
-    children: [
-      "verify",
-      { children: ["__PAGE__", {}, null, null, 4096] },
-      null,
-      null,
-      4096,
-    ],
-  },
-  null,
-  null,
-  4112,
-];
-
 export const POST = async (event: RequestEvent) => {
   const { webviewUrl }: { webviewUrl: string } = await event.request.json();
 
@@ -106,76 +90,18 @@ export const POST = async (event: RequestEvent) => {
       .map((m) => m[1]),
   ];
 
-  const veratadActionId = await getVeratadActionId(
-    event.platform?.env?.VERIFIER_KV,
+  let adultFace = await getAdultFace(event.platform?.env.VERIFIER_IMAGES, event.platform?.env.VERIFIER_KV);
+
+  let veratadResult = await doVeratadTry(
+    event.platform?.env.VERIFIER_KV,
+    webviewUrl,
     deploymentId,
+    payload.jti,
     location.lang,
     userAgent,
     scriptUrls,
+    adultFace.image,
   );
-
-  const actionRes = await fetch(webviewUrl, {
-    method: "POST",
-    headers: {
-      Accept: "text/x-component",
-      "accept-language": location.lang,
-      "Cache-Control": "no-cache",
-      "Content-Type": "text/plain;charset=UTF-8",
-      "Next-Action": veratadActionId,
-      "Next-Router-State-Tree": encodeURIComponent(
-        JSON.stringify(NEXT_ROUTER_STATE_TREE),
-      ),
-      Pragma: "no-cache",
-      Origin: "https://family.k-id.com",
-      Referer: webviewUrl,
-      "Sec-Fetch-Dest": "empty",
-      "Sec-Fetch-Mode": "cors",
-      "Sec-Fetch-Site": "same-origin",
-      Traceparent: await generateTraceparent(),
-      "user-agent": userAgent,
-      "X-Deployment-Id": deploymentId,
-    },
-    body: JSON.stringify([
-      {
-        verificationId: payload.jti,
-        verificationType: "age-estimation-scan",
-        variant: "$undefined",
-        useBranding: true,
-        attemptId: "",
-        locale: "en",
-        colorScheme: "light",
-        surfaceBaseFallback: { light: "#e6e6e6", dark: "#121212" },
-      },
-    ]),
-  });
-
-  if (!actionRes.ok) {
-    return new Response("webview action fetch failed", { status: 500 });
-  }
-
-  const actionResText = await actionRes.text();
-  const actionLines = actionResText.split("\n");
-  const secondLine = actionLines[1];
-
-  if (!secondLine || !secondLine.startsWith("1:")) {
-    return new Response("invalid webview action response", { status: 500 });
-  }
-
-  const actionData = JSON.parse(secondLine.substring("1:".length));
-  if (!actionData.url) {
-    return new Response("invalid webview action data", { status: 500 });
-  }
-
-  const veratadUrl = new URL(actionData.url);
-  const requestId = veratadUrl.pathname.split("/").pop();
-
-  if (!requestId) {
-    return new Response("invalid webview action data url", { status: 500 });
-  }
-
-  let adultFace = await getAdultFace(event.platform?.env.VERIFIER_IMAGES, event.platform?.env.VERIFIER_KV);
-
-  let veratadResult = await doVeratadTry(requestId, userAgent, adultFace.image);
   let attemptCount = 1;
 
   while (veratadResult.status !== "PASS") {
@@ -200,7 +126,16 @@ export const POST = async (event: RequestEvent) => {
     console.warn({ message: "veratad result wasn't pass first try, trying again", imageId: adultFace.imageId });
 
     adultFace = await getAdultFace(event.platform?.env.VERIFIER_IMAGES, event.platform?.env.VERIFIER_KV);
-    veratadResult = await doVeratadTry(requestId, userAgent, adultFace.image);
+    veratadResult = await doVeratadTry(
+      event.platform?.env.VERIFIER_KV,
+      webviewUrl,
+      deploymentId,
+      payload.jti,
+      location.lang,
+      userAgent,
+      scriptUrls,
+      adultFace.image,
+    );
     attemptCount++;
   }
 

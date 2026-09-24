@@ -1,3 +1,19 @@
+export const NEXT_ROUTER_STATE_TREE = [
+  "",
+  {
+    children: [
+      "verify",
+      { children: ["__PAGE__", {}, null, null, 4096] },
+      null,
+      null,
+      4096,
+    ],
+  },
+  null,
+  null,
+  4112,
+];
+
 const randomHex = async (length: number) => {
   const arr = new Uint8Array(length / 2);
   await crypto.getRandomValues(arr);
