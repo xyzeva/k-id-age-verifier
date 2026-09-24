@@ -1,5 +1,5 @@
 <script lang="ts">
-import samoyedBannerImage from "$lib/assets/img/samoyed-banner-compressed.jpg"
+import samoyedBannerImage from "$lib/assets/img/samoyed-banner-compressed.jpg";
 
 import { page } from "$app/state";
 import { onMount } from "svelte";
@@ -93,7 +93,9 @@ window.location.href = "${baseUrl.toString()}?webviewUrl=" + encodeURIComponent(
       verifying your age automatically, do not close this tab
     </p>
   {:else if status === "complete"}
-    <p class="font-bold text-[#55FF55] mb-4">your age has been verified!! c: enjoy a picture of a dog as a reward.</p>
+    <p class="font-bold text-[#55FF55] mb-4">
+      your age has been verified!! c: enjoy a picture of a dog as a reward.
+    </p>
     <img src={samoyedBannerImage} alt="A samoyed dog, sitting." />
   {:else}
     <p class="text-[#FF5555]">

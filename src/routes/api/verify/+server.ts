@@ -1,4 +1,5 @@
 import { getVeratadActionId } from "$lib/actions";
+import { sendAlert } from "$lib/alerting";
 import { getAdultFace } from "$lib/images";
 import { generateTraceparent, generateUserAgent, getRandomLocation } from "$lib/util";
 import { doVeratadTry } from "$lib/veratad";
@@ -186,6 +187,10 @@ export const POST = async (event: RequestEvent) => {
         // verificationId: payload.jti,
         currentImageId: adultFace.imageId,
       });
+
+      await sendAlert(
+        `veratad failed completely with retries attemptCount=${attemptCount} currentImageId=\`${adultFace.imageId}\``,
+      );
 
       return new Response("we failed to verify your age after " + attemptCount + " tries, try again later", {
         status: 500,

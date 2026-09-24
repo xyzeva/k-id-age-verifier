@@ -2,6 +2,7 @@
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
+import { sendAlert } from "./alerting";
 import { parseUserAgent } from "./util";
 
 const fetchVeratadSession = async (requestId: string, userAgent: string) => {
@@ -34,6 +35,7 @@ const fetchVeratadSession = async (requestId: string, userAgent: string) => {
   );
 
   if (!sessionRes.ok) {
+    await sendAlert(`veratad get session failed`);
     console.error({ message: "veratad get session failed", userAgent });
     return new Response("failed to prepare verification", { status: 500 });
   }
@@ -110,6 +112,8 @@ export async function doVeratadTry(requestId: string, userAgent: string, image: 
   });
 
   if (!res.ok) {
+    await sendAlert(`veratad queue failed`);
+
     console.error({ message: "veratad queue failed", userAgent });
     return new Response("failed to send verification", { status: 500 });
   }

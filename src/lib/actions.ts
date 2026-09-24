@@ -1,3 +1,5 @@
+import { sendAlert } from "./alerting";
+
 interface ActionInformation {
   id: string;
   deploymentId: string;
@@ -46,6 +48,10 @@ export async function getVeratadActionId(
       console.info({ message: "obtained new veratad action id for deployment", deploymentId });
       return id;
     }
+
+    console.error({ message: "failed to get veratad action information", scriptUrls, deploymentId });
+    await sendAlert(`failed to get veratad action information \`deploymentId=${deploymentId}\``);
+    throw new Error("failed to get veratad action information");
   }
 
   return veratadActionInformation!.id;
