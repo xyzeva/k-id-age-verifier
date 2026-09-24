@@ -7,7 +7,7 @@ import { onMount } from "svelte";
 const webviewUrl = page.url.searchParams.get("webviewUrl");
 
 let enteredWebviewUrl = $state<string>("");
-let status = $state<"pending" | "complete" | "error">("complete");
+let status = $state<"pending" | "complete" | "error">("pending");
 let error = $state<string | null>(null);
 
 onMount(() => {
