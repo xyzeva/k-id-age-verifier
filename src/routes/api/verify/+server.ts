@@ -8,12 +8,6 @@ import type { RequestEvent } from "./$types";
 export const POST = async (event: RequestEvent) => {
   const { webviewUrl }: { webviewUrl: string } = await event.request.json();
 
-	  if (true) {
-    return new Response("currently disabled, sorry!", {
-      status: 400,
-    });
-  }
-	
   if (typeof webviewUrl !== "string") {
     return new Response("webviewUrl must be a string", {
       status: 400,
