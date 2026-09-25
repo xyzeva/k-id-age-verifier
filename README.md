@@ -1,5 +1,3 @@
-# k-id-age-verifier-new
+# k-id-age-verifier
 
-this time private, for now.
-
-uses veratad, more details when public
+read more on [the website](https://age-verifier.eva.ac) of how this used to work

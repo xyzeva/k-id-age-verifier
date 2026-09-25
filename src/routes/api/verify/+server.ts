@@ -1,11 +1,17 @@
-import { getVeratadActionId } from "$lib/actions";
-import { sendAlert } from "$lib/alerting";
-import { getAdultFace } from "$lib/images";
-import { generateTraceparent, generateUserAgent, getRandomLocation } from "$lib/util";
-import { doVeratadTry } from "$lib/veratad";
+//import { getVeratadActionId } from "$lib/actions";
+//import { sendAlert } from "$lib/alerting";
+//import { getAdultFace } from "$lib/images";
+//import { generateTraceparent, generateUserAgent, getRandomLocation } from "$lib/util";
+//import { doVeratadTry } from "$lib/veratad";
 import type { RequestEvent } from "./$types";
 
 export const POST = async (event: RequestEvent) => {
+  return new Response("the age verifier has been fully patched, read more on the main page", {
+    status: 410,
+	});
+
+  /*
+
   const { webviewUrl }: { webviewUrl: string } = await event.request.json();
 
   if (typeof webviewUrl !== "string") {
@@ -57,7 +63,6 @@ export const POST = async (event: RequestEvent) => {
   const webviewHtmlRes = await fetch(webviewUrl, {
     headers: {
       "User-Agent": userAgent,
-      accept: "*/*",
       "accept-language": location.lang,
       priority: "u=1, i",
       "sec-fetch-dest": "empty",
@@ -144,6 +149,8 @@ export const POST = async (event: RequestEvent) => {
     // actionData,
     // verificationId: payload.jti,
     imageId: adultFace.imageId,
-  });
-  return new Response(null, { status: 204 });
+	});
+return new Response(null, { status: 204 });
+
+ */
 };
